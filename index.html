@@ -595,16 +595,17 @@
     /* ═══════════════════════════════════════════════
        SKY CANVAS + GLASS CARDS
     ═══════════════════════════════════════════════ */
+    html { transition: background 4s ease; }
     #sky-canvas {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
-      z-index: 0;
+      z-index: 1;
       pointer-events: none;
     }
     header {
-      background: rgba(15,23,42,.82) !important;
+      background: rgba(15,23,42,.75) !important;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
@@ -612,13 +613,23 @@
     .cal-nav,
     .sidebar-card,
     .modal {
-      background: rgba(255,255,255,.88) !important;
+      background: rgba(255,255,255,.70) !important;
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
     }
-    main, .calendar-section, .sidebar { position: relative; z-index: 1; }
-    header { z-index: 100; }
+    main, .calendar-section, .sidebar { position: relative; z-index: 2; }
+    header { position: sticky; z-index: 100; }
     .modal-overlay { z-index: 500; }
+    /* Live clock */
+    #header-clock {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      font-variant-numeric: tabular-nums;
+      margin-left: auto;
+      padding-right: 4px;
+    }
 
     /* Responsive */
     @media (max-width: 900px) {
@@ -648,6 +659,7 @@
       <div class="header-subtitle">Matthew &amp; Jamie</div>
     </div>
   </div>
+  <div id="header-clock">--:--</div>
 </header>
 
 <!-- ═══════════════════════════════════════════════
@@ -1832,12 +1844,28 @@ function drawSnow(wCode) {
   });
 }
 
+function setSkyBackground(colors) {
+  const stops = colors.map((c, i) => `${c} ${Math.round(i / (colors.length - 1) * 100)}%`).join(', ');
+  document.documentElement.style.background = `linear-gradient(to bottom, ${stops})`;
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const el = document.getElementById('header-clock');
+  if (el) el.textContent = `${h}:${m}`;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
 function animateSky() {
   skyFrame++;
   const period = getTimePeriod();
   const colors = getSkyColors(period, skyWeatherCode);
+  setSkyBackground(colors);
   skyCtx.clearRect(0, 0, skyCanvas.width, skyCanvas.height);
-  drawGradient(colors);
   if (period === 'night') { drawStars(period); drawMoon(); }
   else drawSun(period);
   drawClouds(skyWeatherCode);
