@@ -1226,7 +1226,7 @@ function saveBirthdays() {
   localStorage.setItem('peeters-birthdays', JSON.stringify(birthdays));
 }
 
-function handleAddBirthday(e) {
+async function handleAddBirthday(e) {
   e.preventDefault();
   const name  = document.getElementById('bday-name').value.trim();
   const month = parseInt(document.getElementById('bday-month').value, 10);
@@ -1243,6 +1243,30 @@ function handleAddBirthday(e) {
   closeModal(bdayModal);
   drawCalendar();
   renderUpcoming();
+
+  // Also create an all-day event in the Family Outlook calendar
+  const yr = today.getFullYear();
+  let bdayDate = new Date(yr, month, day);
+  if (bdayDate < today) bdayDate = new Date(yr + 1, month, day);
+  const dateStr = bdayDate.toISOString().slice(0, 10);
+  const ageStr  = year ? ` (turns ${bdayDate.getFullYear() - year})` : '';
+
+  try {
+    await fetch(CONFIG.N8N_BASE + CONFIG.CREATE_EVENT_PATH, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject:   `🎂 ${name}'s Birthday${ageStr}`,
+        isAllDay:  true,
+        start:     dateStr,
+        end:       dateStr,
+        location:  '',
+        notes:     year ? `${name} was born in ${year}.` : '',
+      }),
+    });
+  } catch (err) {
+    console.warn('Could not add birthday to Family calendar:', err);
+  }
 }
 
 function deleteBirthday(id) {
