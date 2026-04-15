@@ -592,6 +592,34 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ═══════════════════════════════════════════════
+       SKY CANVAS + GLASS CARDS
+    ═══════════════════════════════════════════════ */
+    #sky-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+    header {
+      background: rgba(15,23,42,.82) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .cal-grid-wrap,
+    .cal-nav,
+    .sidebar-card,
+    .modal {
+      background: rgba(255,255,255,.88) !important;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    main, .calendar-section, .sidebar { position: relative; z-index: 1; }
+    header { z-index: 100; }
+    .modal-overlay { z-index: 500; }
+
     /* Responsive */
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
@@ -607,6 +635,7 @@
   </style>
 </head>
 <body>
+<canvas id="sky-canvas"></canvas>
 
 <!-- ═══════════════════════════════════════════════
      HEADER
@@ -844,11 +873,11 @@ const today   = new Date();
 let viewYear  = today.getFullYear();
 let viewMonth = today.getMonth();     // 0-indexed
 
-let mattEvents   = [];   // events for current view month
+let mattEvents   = [];
 let familyEvents = [];
-const cache      = {};   // key: "YYYY-MM" → { ts, matt:[], family:[] }
-
-let birthdays = loadBirthdays();
+const cache      = {};
+let birthdays    = loadBirthdays();
+let skyWeatherCode = 113; // default sunny — updated when weather loads
 
 /* ──────────────────────────────────────────────
    DOM REFS
@@ -903,6 +932,7 @@ eventAllDay.addEventListener('change', () => {
 
 fetchWeather();
 renderView();
+initSky();
 
 /* ──────────────────────────────────────────────
    NAVIGATION
@@ -1385,6 +1415,7 @@ async function fetchWeather() {
 
     const curTemp  = cur.temp_C;
     const curCode  = parseInt(cur.weatherCode, 10);
+    skyWeatherCode = curCode;
     const curDesc  = cur.weatherDesc[0].value;
 
     const tomMax   = tomW.maxtempC;
@@ -1534,6 +1565,288 @@ function escHtml(s) {
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;');
+}
+
+/* ──────────────────────────────────────────────
+   SKY CANVAS ANIMATION
+────────────────────────────────────────────── */
+const skyCanvas = document.getElementById('sky-canvas');
+const skyCtx    = skyCanvas.getContext('2d');
+let skyFrame = 0;
+let skyStars = [], skyBirds = [], skyClouds = [], skyRain = [], skySnow = [];
+
+function initSky() {
+  resizeSky();
+  window.addEventListener('resize', resizeSky);
+
+  skyStars = Array.from({length: 110}, () => ({
+    x: Math.random() * skyCanvas.width,
+    y: Math.random() * skyCanvas.height * 0.75,
+    r: Math.random() * 1.5 + 0.3,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.025 + 0.008,
+  }));
+
+  skyBirds = Array.from({length: 5}, (_, i) => ({
+    x: -80 - i * 220,
+    y: 65 + i * 30 + Math.random() * 15,
+    speed: 1.3 + Math.random() * 0.9,
+    wing: Math.random() * Math.PI * 2,
+    size: 7 + Math.random() * 5,
+  }));
+
+  skyClouds = Array.from({length: 7}, () => ({
+    x: Math.random() * skyCanvas.width,
+    y: 30 + Math.random() * 200,
+    w: 90 + Math.random() * 160,
+    h: 38 + Math.random() * 28,
+    speed: 0.12 + Math.random() * 0.22,
+    op: 0.55 + Math.random() * 0.4,
+  }));
+
+  skyRain = Array.from({length: 90}, () => ({
+    x: Math.random() * skyCanvas.width,
+    y: Math.random() * skyCanvas.height,
+    len: 11 + Math.random() * 14,
+    speed: 9 + Math.random() * 7,
+    op: 0.25 + Math.random() * 0.45,
+  }));
+
+  skySnow = Array.from({length: 65}, () => ({
+    x: Math.random() * skyCanvas.width,
+    y: Math.random() * skyCanvas.height,
+    r: 1.2 + Math.random() * 3,
+    speed: 0.4 + Math.random() * 1.3,
+    drift: Math.random() * Math.PI * 2,
+    driftSpeed: 0.01 + Math.random() * 0.02,
+  }));
+
+  requestAnimationFrame(animateSky);
+}
+
+function resizeSky() {
+  skyCanvas.width  = window.innerWidth;
+  skyCanvas.height = window.innerHeight;
+}
+
+function getTimePeriod() {
+  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  if (h >= 21 || h < 5)  return 'night';
+  if (h < 7)              return 'dawn';
+  if (h < 12)             return 'morning';
+  if (h < 15)             return 'midday';
+  if (h < 19)             return 'afternoon';
+  return 'dusk';
+}
+
+function getSkyColors(period, wCode) {
+  const isRainy  = wCode >= 263 && wCode <= 395 && !(wCode >= 323 && wCode <= 338);
+  const isSnowy  = (wCode >= 323 && wCode <= 338) || wCode === 227 || wCode === 230;
+  const isCloudy = wCode >= 116 && !isRainy && !isSnowy;
+  if (isRainy)  return ['#1c2e40','#2c4a62','#4a6a8a'];
+  if (isSnowy)  return ['#8fa8b8','#c8dce8','#e8f4f8'];
+  const map = {
+    night:     ['#060818','#0d1b4b','#16213e'],
+    dawn:      ['#2d1b69','#922b8a','#e74c3c','#f39c12','#f9ca24'],
+    morning:   ['#0984e3','#74b9ff','#c8e8ff'],
+    midday:    ['#0063b8','#1e90ff','#87ceeb'],
+    afternoon: ['#1565c0','#42a5f5','#f9ca24'],
+    dusk:      ['#1a1040','#922b21','#e74c3c','#f39c12'],
+  };
+  const colors = map[period];
+  if (isCloudy && (period === 'morning' || period === 'midday'))
+    return ['#5d7a90','#8faabb','#c0d5df'];
+  return colors;
+}
+
+function drawGradient(colors) {
+  const g = skyCtx.createLinearGradient(0, 0, 0, skyCanvas.height);
+  colors.forEach((c, i) => g.addColorStop(i / (colors.length - 1), c));
+  skyCtx.fillStyle = g;
+  skyCtx.fillRect(0, 0, skyCanvas.width, skyCanvas.height);
+}
+
+function drawSun(period) {
+  if (period === 'night') return;
+  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  const t = (h - 5.5) / 15;
+  if (t < 0 || t > 1) return;
+  const sx = t * skyCanvas.width;
+  const sy = skyCanvas.height * 0.08 + (1 - Math.sin(t * Math.PI)) * skyCanvas.height * 0.32;
+  const r  = (period === 'dawn' || period === 'dusk') ? 30 : 22;
+  const col = (period === 'dawn' || period === 'dusk') ? '#f39c12' : '#f9ca24';
+
+  // outer glow
+  const glow = skyCtx.createRadialGradient(sx, sy, 0, sx, sy, r * 4);
+  glow.addColorStop(0, 'rgba(249,202,36,0.35)');
+  glow.addColorStop(1, 'rgba(249,202,36,0)');
+  skyCtx.fillStyle = glow;
+  skyCtx.beginPath(); skyCtx.arc(sx, sy, r * 4, 0, Math.PI * 2); skyCtx.fill();
+
+  // sun disc
+  skyCtx.fillStyle = col;
+  skyCtx.beginPath(); skyCtx.arc(sx, sy, r, 0, Math.PI * 2); skyCtx.fill();
+
+  // rays (daytime only)
+  if (period === 'morning' || period === 'midday' || period === 'afternoon') {
+    skyCtx.strokeStyle = col; skyCtx.lineWidth = 2; skyCtx.globalAlpha = 0.45;
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + skyFrame * 0.004;
+      skyCtx.beginPath();
+      skyCtx.moveTo(sx + Math.cos(a) * (r + 5), sy + Math.sin(a) * (r + 5));
+      skyCtx.lineTo(sx + Math.cos(a) * (r + 16), sy + Math.sin(a) * (r + 16));
+      skyCtx.stroke();
+    }
+    skyCtx.globalAlpha = 1;
+  }
+}
+
+function drawMoon() {
+  const cx = skyCanvas.width * 0.78, cy = 75;
+  // glow
+  const glow = skyCtx.createRadialGradient(cx, cy, 0, cx, cy, 90);
+  glow.addColorStop(0, 'rgba(255,255,200,.15)'); glow.addColorStop(1, 'rgba(255,255,200,0)');
+  skyCtx.fillStyle = glow;
+  skyCtx.beginPath(); skyCtx.arc(cx, cy, 90, 0, Math.PI * 2); skyCtx.fill();
+  // disc
+  skyCtx.fillStyle = '#fef9c3';
+  skyCtx.beginPath(); skyCtx.arc(cx, cy, 32, 0, Math.PI * 2); skyCtx.fill();
+  // crescent shadow
+  skyCtx.fillStyle = '#0d1b4b';
+  skyCtx.beginPath(); skyCtx.arc(cx + 13, cy - 3, 27, 0, Math.PI * 2); skyCtx.fill();
+  // craters
+  skyCtx.fillStyle = 'rgba(200,195,150,.4)';
+  [[cx - 9, cy + 7, 4],[cx + 1, cy - 11, 3],[cx - 15, cy - 1, 2.5]].forEach(([x,y,r]) => {
+    skyCtx.beginPath(); skyCtx.arc(x, y, r, 0, Math.PI * 2); skyCtx.fill();
+  });
+}
+
+function drawStars(period) {
+  if (period !== 'night') return;
+  skyStars.forEach(s => {
+    s.phase += s.speed;
+    skyCtx.fillStyle = `rgba(255,255,255,${0.35 + Math.sin(s.phase) * 0.55})`;
+    skyCtx.beginPath(); skyCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2); skyCtx.fill();
+  });
+}
+
+function drawBirds(period) {
+  if (period !== 'morning' && period !== 'dawn') return;
+  skyBirds.forEach(b => {
+    b.x += b.speed; b.wing += 0.09;
+    if (b.x > skyCanvas.width + 120) b.x = -120;
+    const flap = Math.sin(b.wing) * 5;
+    skyCtx.strokeStyle = 'rgba(15,23,42,.55)';
+    skyCtx.lineWidth = 1.6; skyCtx.lineCap = 'round';
+    skyCtx.beginPath();
+    skyCtx.moveTo(b.x, b.y);
+    skyCtx.quadraticCurveTo(b.x - b.size * .55, b.y - flap, b.x - b.size, b.y);
+    skyCtx.moveTo(b.x, b.y);
+    skyCtx.quadraticCurveTo(b.x + b.size * .55, b.y - flap, b.x + b.size, b.y);
+    skyCtx.stroke();
+  });
+}
+
+function drawGround() {
+  const gy = skyCanvas.height - 55;
+  const g = skyCtx.createLinearGradient(0, gy, 0, skyCanvas.height);
+  g.addColorStop(0, '#2d5a27'); g.addColorStop(0.5, '#1e3d1a'); g.addColorStop(1, '#131f11');
+  skyCtx.fillStyle = g;
+  skyCtx.fillRect(0, gy, skyCanvas.width, skyCanvas.height - gy);
+  skyCtx.strokeStyle = '#3d7a35'; skyCtx.lineWidth = 1.5;
+  for (let x = 8; x < skyCanvas.width; x += 20 + Math.abs(Math.sin(x) * 7)) {
+    skyCtx.beginPath();
+    skyCtx.moveTo(x, gy); skyCtx.lineTo(x - 3, gy - 7);
+    skyCtx.moveTo(x + 4, gy); skyCtx.lineTo(x + 4, gy - 9);
+    skyCtx.moveTo(x + 9, gy); skyCtx.lineTo(x + 12, gy - 5);
+    skyCtx.stroke();
+  }
+  return gy;
+}
+
+function drawWorm(period, gy) {
+  if (period !== 'morning' && period !== 'dawn') return;
+  const wx = skyCanvas.width * 0.15;
+  const pop = Math.sin(skyFrame * 0.022) * 14 + 10;
+  const wobble = Math.sin(skyFrame * 0.04) * 3;
+  skyCtx.save();
+  skyCtx.translate(wx, gy - pop);
+  const segs = 4, segH = 8;
+  for (let i = 0; i < segs; i++) {
+    const sw = 5 + Math.sin(skyFrame * 0.05 + i) * 1.5;
+    const ox = Math.sin(skyFrame * 0.04 + i * 0.8) * 2.5;
+    skyCtx.fillStyle = i % 2 === 0 ? '#e74c3c' : '#c0392b';
+    skyCtx.beginPath(); skyCtx.ellipse(ox, i * segH, sw, segH / 1.6, 0, 0, Math.PI * 2); skyCtx.fill();
+  }
+  skyCtx.fillStyle = 'white';
+  skyCtx.beginPath(); skyCtx.arc(-3 + wobble, -4, 2.5, 0, Math.PI * 2);
+  skyCtx.arc( 3 + wobble, -4, 2.5, 0, Math.PI * 2); skyCtx.fill();
+  skyCtx.fillStyle = '#1e293b';
+  skyCtx.beginPath(); skyCtx.arc(-2.5 + wobble, -4, 1, 0, Math.PI * 2);
+  skyCtx.arc(3.5 + wobble, -4, 1, 0, Math.PI * 2); skyCtx.fill();
+  skyCtx.strokeStyle = '#1e293b'; skyCtx.lineWidth = 1;
+  skyCtx.beginPath(); skyCtx.arc(wobble, -1, 2.5, 0, Math.PI); skyCtx.stroke();
+  skyCtx.restore();
+}
+
+function drawClouds(wCode) {
+  if (wCode < 116) return;
+  const grey = wCode >= 263;
+  skyClouds.forEach(c => {
+    c.x -= c.speed;
+    if (c.x + c.w < 0) { c.x = skyCanvas.width + c.w; c.y = 30 + Math.random() * 200; }
+    const col = grey ? '#9aaab8' : '#ffffff';
+    skyCtx.globalAlpha = c.op;
+    skyCtx.fillStyle = col;
+    skyCtx.beginPath(); skyCtx.ellipse(c.x, c.y, c.w/2, c.h/2, 0, 0, Math.PI*2); skyCtx.fill();
+    skyCtx.beginPath(); skyCtx.arc(c.x - c.w*.25, c.y - c.h*.2, c.h*.55, 0, Math.PI*2); skyCtx.fill();
+    skyCtx.beginPath(); skyCtx.arc(c.x + c.w*.2,  c.y - c.h*.15, c.h*.45, 0, Math.PI*2); skyCtx.fill();
+    skyCtx.beginPath(); skyCtx.arc(c.x + c.w*.35, c.y + c.h*.05, c.h*.35, 0, Math.PI*2); skyCtx.fill();
+    skyCtx.globalAlpha = 1;
+  });
+}
+
+function drawRain(wCode) {
+  const isRainy = (wCode >= 263 && wCode <= 395) && !(wCode >= 323 && wCode <= 338);
+  if (!isRainy) return;
+  skyCtx.strokeStyle = 'rgba(147,197,253,.5)'; skyCtx.lineWidth = 1;
+  skyRain.forEach(r => {
+    r.y += r.speed; r.x -= r.speed * 0.18;
+    if (r.y > skyCanvas.height) { r.y = -20; r.x = Math.random() * skyCanvas.width; }
+    skyCtx.globalAlpha = r.op;
+    skyCtx.beginPath();
+    skyCtx.moveTo(r.x, r.y); skyCtx.lineTo(r.x - r.len*.18, r.y + r.len);
+    skyCtx.stroke();
+  });
+  skyCtx.globalAlpha = 1;
+}
+
+function drawSnow(wCode) {
+  const isSnowy = (wCode >= 323 && wCode <= 338) || wCode === 227 || wCode === 230;
+  if (!isSnowy) return;
+  skySnow.forEach(s => {
+    s.y += s.speed; s.drift += s.driftSpeed; s.x += Math.sin(s.drift) * 0.5;
+    if (s.y > skyCanvas.height) { s.y = -10; s.x = Math.random() * skyCanvas.width; }
+    skyCtx.fillStyle = `rgba(255,255,255,${0.65 + Math.sin(s.drift) * 0.3})`;
+    skyCtx.beginPath(); skyCtx.arc(s.x, s.y, s.r, 0, Math.PI*2); skyCtx.fill();
+  });
+}
+
+function animateSky() {
+  skyFrame++;
+  const period = getTimePeriod();
+  const colors = getSkyColors(period, skyWeatherCode);
+  skyCtx.clearRect(0, 0, skyCanvas.width, skyCanvas.height);
+  drawGradient(colors);
+  if (period === 'night') { drawStars(period); drawMoon(); }
+  else drawSun(period);
+  drawClouds(skyWeatherCode);
+  drawRain(skyWeatherCode);
+  drawSnow(skyWeatherCode);
+  const gy = drawGround();
+  drawBirds(period);
+  drawWorm(period, gy);
+  requestAnimationFrame(animateSky);
 }
 </script>
 </body>
