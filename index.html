@@ -1582,12 +1582,14 @@ function escHtml(s) {
 /* ──────────────────────────────────────────────
    SKY CANVAS ANIMATION
 ────────────────────────────────────────────── */
-const skyCanvas = document.getElementById('sky-canvas');
-const skyCtx    = skyCanvas.getContext('2d');
+let skyCanvas, skyCtx;
 let skyFrame = 0;
 let skyStars = [], skyBirds = [], skyClouds = [], skyRain = [], skySnow = [];
 
 function initSky() {
+  skyCanvas = document.getElementById('sky-canvas');
+  if (!skyCanvas) return;
+  skyCtx = skyCanvas.getContext('2d');
   resizeSky();
   window.addEventListener('resize', resizeSky);
 
