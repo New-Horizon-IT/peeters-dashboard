@@ -84,56 +84,53 @@
     }
 
     /* ═══════════════════════════════════════════════
-       WEATHER WIDGET
+       WEATHER WIDGET (sidebar card)
     ═══════════════════════════════════════════════ */
     #weather-widget {
       display: flex;
       align-items: center;
-      gap: 18px;
-      background: rgba(255,255,255,.07);
-      border: 1px solid rgba(255,255,255,.12);
-      border-radius: 10px;
-      padding: 8px 16px;
-      backdrop-filter: blur(8px);
+      justify-content: space-around;
+      gap: 12px;
+      padding: 12px 16px 16px;
     }
     .weather-day {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
-      min-width: 62px;
+      gap: 3px;
+      flex: 1;
     }
     .weather-label {
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: .6px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-    .weather-emoji { font-size: 22px; line-height: 1; }
-    .weather-temp {
-      font-size: 15px;
+      color: var(--text-muted);
       font-weight: 600;
-      color: #f1f5f9;
+    }
+    .weather-emoji { font-size: 28px; line-height: 1; margin: 4px 0; }
+    .weather-temp {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
     }
     .weather-desc {
-      font-size: 10px;
-      color: #94a3b8;
+      font-size: 11px;
+      color: var(--text-muted);
       text-align: center;
-      max-width: 62px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: normal;
+      line-height: 1.3;
     }
     .weather-divider {
       width: 1px;
-      height: 36px;
-      background: rgba(255,255,255,.15);
+      height: 60px;
+      background: var(--border);
+      flex-shrink: 0;
     }
-    #weather-widget.loading::after {
-      content: 'Loading weather…';
-      font-size: 11px;
-      color: #94a3b8;
+    .weather-loading {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 8px 0;
     }
 
     /* ═══════════════════════════════════════════════
@@ -608,9 +605,6 @@
       <div class="header-subtitle">Matthew &amp; Jamie</div>
     </div>
   </div>
-  <div id="weather-widget">
-    <div class="spin" style="font-size:14px;color:#94a3b8;">⟳</div>
-  </div>
 </header>
 
 <!-- ═══════════════════════════════════════════════
@@ -658,6 +652,24 @@
   <!-- RIGHT: Sidebar -->
   <div class="sidebar">
 
+    <!-- Weather -->
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">
+        <div class="sidebar-card-title">🌤️ Weather — Newent</div>
+      </div>
+      <div id="weather-widget">
+        <div class="weather-loading">Loading weather…</div>
+      </div>
+    </div>
+
+    <!-- Add Event -->
+    <div class="sidebar-card">
+      <div class="sidebar-card-header">
+        <div class="sidebar-card-title">📅 Family Calendar</div>
+        <button class="add-btn add-event-btn" id="btn-add-event">+ Add Event</button>
+      </div>
+    </div>
+
     <!-- Upcoming events -->
     <div class="sidebar-card">
       <div class="sidebar-card-header">
@@ -692,6 +704,56 @@
       <button class="modal-close" id="day-modal-close">✕</button>
     </div>
     <div class="modal-body" id="day-modal-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MODAL: Add Event
+═══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Family Event</div>
+      <button class="modal-close" id="event-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="event-form">
+        <div class="form-group">
+          <label class="form-label" for="event-title">Title</label>
+          <input class="form-input" type="text" id="event-title" placeholder="e.g. School Play" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="event-date">Date</label>
+          <input class="form-input" type="date" id="event-date" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="event-allday" style="width:16px;height:16px;cursor:pointer;" />
+            <span>All day event</span>
+          </label>
+        </div>
+        <div id="event-time-fields" class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="event-start">Start Time</label>
+            <input class="form-input" type="time" id="event-start" value="09:00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event-end">End Time</label>
+            <input class="form-input" type="time" id="event-end" value="10:00" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="event-location">Location <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+          <input class="form-input" type="text" id="event-location" placeholder="e.g. Village Hall" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="event-notes">Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+          <textarea class="form-input" id="event-notes" rows="3" placeholder="Any additional details…" style="resize:vertical;"></textarea>
+        </div>
+        <div id="event-feedback" style="display:none;margin-bottom:10px;padding:10px;border-radius:8px;font-size:13px;font-weight:500;"></div>
+        <button class="submit-btn" type="submit" id="event-submit" style="background:var(--family);">Add to Family Calendar 📅</button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -752,11 +814,12 @@
    CONFIG  ← update these if needed
 ────────────────────────────────────────────── */
 const CONFIG = {
-  N8N_BASE:      'https://n8n.newhorizon-it.co.uk',
-  MATT_PATH:     '/webhook/peeters-matt-events',
-  FAMILY_PATH:   '/webhook/peeters-family-events',
-  WEATHER_LOC:   'Newent,Gloucestershire',
-  CACHE_MINS:    10,             // how long to cache calendar data
+  N8N_BASE:           'https://n8n.newhorizon-it.co.uk',
+  MATT_PATH:          '/webhook/peeters-matt-events',
+  FAMILY_PATH:        '/webhook/peeters-family-events',
+  CREATE_EVENT_PATH:  '/webhook/peeters-create-event',
+  WEATHER_LOC:        'Newent,Gloucestershire',
+  CACHE_MINS:         10,
 };
 
 /* ──────────────────────────────────────────────
@@ -791,6 +854,14 @@ const bdayModal      = document.getElementById('bday-modal');
 const bdayModalClose = document.getElementById('bday-modal-close');
 const bdayForm       = document.getElementById('bday-form');
 
+const eventModal      = document.getElementById('event-modal');
+const eventModalClose = document.getElementById('event-modal-close');
+const eventForm       = document.getElementById('event-form');
+const eventAllDay     = document.getElementById('event-allday');
+const eventTimeFields = document.getElementById('event-time-fields');
+const eventFeedback   = document.getElementById('event-feedback');
+const eventSubmit     = document.getElementById('event-submit');
+
 /* ──────────────────────────────────────────────
    INIT
 ────────────────────────────────────────────── */
@@ -798,12 +869,20 @@ document.getElementById('btn-prev').addEventListener('click', () => navigate(-1)
 document.getElementById('btn-next').addEventListener('click', () => navigate(+1));
 document.getElementById('btn-today').addEventListener('click', goToday);
 document.getElementById('btn-add-bday').addEventListener('click', () => openModal(bdayModal));
-dayModalClose.addEventListener('click',  () => closeModal(dayModal));
-bdayModalClose.addEventListener('click', () => closeModal(bdayModal));
+document.getElementById('btn-add-event').addEventListener('click', openEventModal);
+dayModalClose.addEventListener('click',   () => closeModal(dayModal));
+bdayModalClose.addEventListener('click',  () => closeModal(bdayModal));
+eventModalClose.addEventListener('click', () => closeModal(eventModal));
 bdayForm.addEventListener('submit', handleAddBirthday);
+eventForm.addEventListener('submit', handleAddEvent);
+
+// Toggle time fields when all-day is checked
+eventAllDay.addEventListener('change', () => {
+  eventTimeFields.style.display = eventAllDay.checked ? 'none' : 'grid';
+});
 
 // Close on overlay click
-[dayModal, bdayModal].forEach(m => m.addEventListener('click', e => {
+[dayModal, bdayModal, eventModal].forEach(m => m.addEventListener('click', e => {
   if (e.target === m) closeModal(m);
 }));
 
@@ -1256,6 +1335,83 @@ function weatherEmoji(code) {
   if (code >= 263 && code <= 308)                    return '🌧️';
   if (code >= 353 && code <= 374)                    return '🌦️';
   return '🌤️';
+}
+
+/* ──────────────────────────────────────────────
+   ADD EVENT
+────────────────────────────────────────────── */
+function openEventModal() {
+  // Default date to today
+  const d = today.toISOString().slice(0, 10);
+  document.getElementById('event-date').value = d;
+  eventAllDay.checked = false;
+  eventTimeFields.style.display = 'grid';
+  eventFeedback.style.display = 'none';
+  eventSubmit.disabled = false;
+  eventSubmit.textContent = 'Add to Family Calendar 📅';
+  eventForm.reset();
+  document.getElementById('event-date').value = d;
+  document.getElementById('event-start').value = '09:00';
+  document.getElementById('event-end').value = '10:00';
+  openModal(eventModal);
+}
+
+async function handleAddEvent(e) {
+  e.preventDefault();
+
+  const title    = document.getElementById('event-title').value.trim();
+  const date     = document.getElementById('event-date').value;
+  const isAllDay = eventAllDay.checked;
+  const start    = document.getElementById('event-start').value;
+  const end      = document.getElementById('event-end').value;
+  const location = document.getElementById('event-location').value.trim();
+  const notes    = document.getElementById('event-notes').value.trim();
+
+  const payload = {
+    subject:   title,
+    isAllDay,
+    location,
+    notes,
+    start: isAllDay ? date : `${date}T${start}:00`,
+    end:   isAllDay ? date : `${date}T${end}:00`,
+  };
+
+  eventSubmit.disabled = true;
+  eventSubmit.textContent = 'Saving…';
+  showEventFeedback('', '');
+
+  try {
+    const res = await fetch(CONFIG.N8N_BASE + CONFIG.CREATE_EVENT_PATH, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      showEventFeedback('✅ Event added to Family calendar!', 'success');
+      // Bust cache for this month so it reloads
+      const key = `${viewYear}-${String(viewMonth).padStart(2,'0')}`;
+      delete cache[key];
+      setTimeout(() => {
+        closeModal(eventModal);
+        renderView();
+      }, 1200);
+    } else {
+      throw new Error(`Server returned ${res.status}`);
+    }
+  } catch (err) {
+    showEventFeedback('❌ Could not save event. Check n8n is active.', 'error');
+    eventSubmit.disabled = false;
+    eventSubmit.textContent = 'Add to Family Calendar 📅';
+  }
+}
+
+function showEventFeedback(msg, type) {
+  if (!msg) { eventFeedback.style.display = 'none'; return; }
+  eventFeedback.style.display = 'block';
+  eventFeedback.textContent = msg;
+  eventFeedback.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+  eventFeedback.style.color      = type === 'success' ? '#065f46' : '#991b1b';
 }
 
 /* ──────────────────────────────────────────────

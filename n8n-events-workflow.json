@@ -142,6 +142,70 @@
       "position": [660, 220],
       "id": "b8c9d0e1-f2a3-4567-1234-678901234567",
       "name": "Respond Family"
+    },
+    {
+      "parameters": {
+        "path": "peeters-create-event",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "https://peeters-dashboard.newhorizon-it.co.uk"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 440],
+      "id": "c9d0e1f2-a3b4-5678-2345-789012345678",
+      "name": "Create Event Webhook",
+      "webhookId": "peeters-create-event-wh"
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendarId": {
+          "__rl": true,
+          "value": "AAMkAGJhMzVhZDBlLWE1ZGQtNDkwYi1hZTgxLWJmODJmOGFiOGU1ZABGAAAAAAD25vkElwujS7ulYWQl3fuFBwDPKVdrzdR8Sb0QFrIu4FvOAAAAAAEGAADPKVdrzdR8Sb0QFrIu4FvOAAMVwQT0AAA=",
+          "mode": "id"
+        },
+        "subject": "={{ $json.body.subject }}",
+        "start": "={{ $json.body.start }}",
+        "end": "={{ $json.body.end }}",
+        "additionalFields": {
+          "isAllDay": "={{ $json.body.isAllDay }}",
+          "location": "={{ $json.body.location }}",
+          "bodyContent": "={{ $json.body.notes }}"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [220, 440],
+      "id": "d0e1f2a3-b4c5-6789-3456-890123456789",
+      "name": "Create Family Event",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "OrL1r8UNeBy5NGXS",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "https://peeters-dashboard.newhorizon-it.co.uk" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [440, 440],
+      "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
+      "name": "Respond Create"
     }
   ],
   "connections": {
@@ -162,6 +226,12 @@
     },
     "Format Family Events": {
       "main": [[{ "node": "Respond Family", "type": "main", "index": 0 }]]
+    },
+    "Create Event Webhook": {
+      "main": [[{ "node": "Create Family Event", "type": "main", "index": 0 }]]
+    },
+    "Create Family Event": {
+      "main": [[{ "node": "Respond Create", "type": "main", "index": 0 }]]
     }
   },
   "pinData": {},
