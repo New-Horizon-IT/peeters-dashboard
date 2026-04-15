@@ -572,6 +572,20 @@
     /* ═══════════════════════════════════════════════
        MISC
     ═══════════════════════════════════════════════ */
+    .delete-event-btn {
+      background: none;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity .15s;
+      flex-shrink: 0;
+      padding: 2px 4px;
+      border-radius: 4px;
+      align-self: flex-start;
+    }
+    .delete-event-btn:hover { opacity: 1; background: rgba(239,68,68,.1); }
+
     .spin {
       display: inline-block;
       animation: spin 1s linear infinite;
@@ -818,6 +832,7 @@ const CONFIG = {
   MATT_PATH:          '/webhook/peeters-matt-events',
   FAMILY_PATH:        '/webhook/peeters-family-events',
   CREATE_EVENT_PATH:  '/webhook/peeters-create-event',
+  DELETE_EVENT_PATH:  '/webhook/peeters-delete-event',
   WEATHER_LOC:        'Newent,Gloucestershire',
   CACHE_MINS:         10,
 };
@@ -1133,23 +1148,64 @@ function openDayModal(date) {
       time,
       location: ev.location || '',
       type:     ev.calendar,
+      eventId:  ev.id || null,
     }));
   });
 
   openModal(dayModal);
 }
 
-function makeEventRow({ icon, subject, time, location, type }) {
+function makeEventRow({ icon, subject, time, location, type, eventId }) {
   const wrap = document.createElement('div');
   wrap.className = `day-event-item ${type}`;
+  wrap.style.justifyContent = 'space-between';
   wrap.innerHTML = `
-    <div class="day-event-icon">${icon}</div>
-    <div>
-      <div class="day-event-subject ${type}">${escHtml(subject)}</div>
-      ${time     ? `<div class="day-event-time">⏰ ${escHtml(time)}</div>` : ''}
-      ${location ? `<div class="day-event-loc">📍 ${escHtml(location)}</div>` : ''}
-    </div>`;
+    <div style="display:flex;gap:10px;align-items:flex-start;flex:1;min-width:0;">
+      <div class="day-event-icon">${icon}</div>
+      <div style="min-width:0;">
+        <div class="day-event-subject ${type}">${escHtml(subject)}</div>
+        ${time     ? `<div class="day-event-time">⏰ ${escHtml(time)}</div>` : ''}
+        ${location ? `<div class="day-event-loc">📍 ${escHtml(location)}</div>` : ''}
+      </div>
+    </div>
+    ${type === 'family' && eventId ? `<button class="delete-event-btn" data-id="${escHtml(eventId)}" title="Delete event">🗑️</button>` : ''}`;
+
+  if (type === 'family' && eventId) {
+    wrap.querySelector('.delete-event-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteEvent(eventId, subject, wrap);
+    });
+  }
   return wrap;
+}
+
+async function deleteEvent(eventId, subject, rowEl) {
+  if (!confirm(`Are you sure you want to delete:\n\n"${subject}"?`)) return;
+
+  rowEl.style.opacity = '0.5';
+  rowEl.style.pointerEvents = 'none';
+
+  try {
+    const res = await fetch(CONFIG.N8N_BASE + CONFIG.DELETE_EVENT_PATH, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ eventId }),
+    });
+
+    if (res.ok) {
+      rowEl.remove();
+      // Bust cache so calendar reloads
+      const key = `${viewYear}-${String(viewMonth).padStart(2,'0')}`;
+      delete cache[key];
+      renderView();
+    } else {
+      throw new Error(`Status ${res.status}`);
+    }
+  } catch (err) {
+    alert('Could not delete event — check n8n is active.');
+    rowEl.style.opacity = '1';
+    rowEl.style.pointerEvents = 'auto';
+  }
 }
 
 function formatEventTime(ev) {
@@ -1251,6 +1307,14 @@ async function handleAddBirthday(e) {
   const dateStr = bdayDate.toISOString().slice(0, 10);
   const ageStr  = year ? ` (turns ${bdayDate.getFullYear() - year})` : '';
 
+  const tzOff = (() => {
+    const off = -new Date().getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const h = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+    const m = String(Math.abs(off) % 60).padStart(2, '0');
+    return `${sign}${h}:${m}`;
+  })();
+
   try {
     await fetch(CONFIG.N8N_BASE + CONFIG.CREATE_EVENT_PATH, {
       method:  'POST',
@@ -1258,8 +1322,8 @@ async function handleAddBirthday(e) {
       body: JSON.stringify({
         subject:   `🎂 ${name}'s Birthday${ageStr}`,
         isAllDay:  true,
-        start:     dateStr,
-        end:       dateStr,
+        start:     `${dateStr}T00:00:00${tzOff}`,
+        end:       `${dateStr}T23:59:59${tzOff}`,
         location:  '',
         notes:     year ? `${name} was born in ${year}.` : '',
       }),
@@ -1391,13 +1455,22 @@ async function handleAddEvent(e) {
   const location = document.getElementById('event-location').value.trim();
   const notes    = document.getElementById('event-notes').value.trim();
 
+  // Build timezone offset string e.g. "+01:00" for BST
+  const tzOffset = (() => {
+    const off = -new Date().getTimezoneOffset();
+    const sign = off >= 0 ? '+' : '-';
+    const h = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0');
+    const m = String(Math.abs(off) % 60).padStart(2, '0');
+    return `${sign}${h}:${m}`;
+  })();
+
   const payload = {
     subject:   title,
     isAllDay,
     location,
     notes,
-    start: isAllDay ? date : `${date}T${start}:00`,
-    end:   isAllDay ? date : `${date}T${end}:00`,
+    start: isAllDay ? `${date}T00:00:00${tzOffset}` : `${date}T${start}:00${tzOffset}`,
+    end:   isAllDay ? `${date}T23:59:59${tzOffset}` : `${date}T${end}:00${tzOffset}`,
   };
 
   eventSubmit.disabled = true;

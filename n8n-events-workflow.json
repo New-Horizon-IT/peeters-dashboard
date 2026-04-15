@@ -206,6 +206,63 @@
       "position": [440, 440],
       "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
       "name": "Respond Create"
+    },
+    {
+      "parameters": {
+        "path": "peeters-delete-event",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 660],
+      "id": "f2a3b4c5-d6e7-8901-5678-012345678901",
+      "name": "Delete Event Webhook",
+      "webhookId": "peeters-delete-event-wh"
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "delete",
+        "calendarId": {
+          "__rl": true,
+          "value": "AAMkAGJhMzVhZDBlLWE1ZGQtNDkwYi1hZTgxLWJmODJmOGFiOGU1ZABGAAAAAAD25vkElwujS7ulYWQl3fuFBwDPKVdrzdR8Sb0QFrIu4FvOAAAAAAEGAADPKVdrzdR8Sb0QFrIu4FvOAAMVwQT0AAA=",
+          "mode": "id"
+        },
+        "eventId": "={{ $json.body.eventId }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [220, 660],
+      "id": "a3b4c5d6-e7f8-9012-6789-123456789012",
+      "name": "Delete Family Event",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "OrL1r8UNeBy5NGXS",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [440, 660],
+      "id": "b4c5d6e7-f8a9-0123-7890-234567890123",
+      "name": "Respond Delete"
     }
   ],
   "connections": {
@@ -232,6 +289,12 @@
     },
     "Create Family Event": {
       "main": [[{ "node": "Respond Create", "type": "main", "index": 0 }]]
+    },
+    "Delete Event Webhook": {
+      "main": [[{ "node": "Delete Family Event", "type": "main", "index": 0 }]]
+    },
+    "Delete Family Event": {
+      "main": [[{ "node": "Respond Delete", "type": "main", "index": 0 }]]
     }
   },
   "pinData": {},
