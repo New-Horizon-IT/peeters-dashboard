@@ -58,6 +58,7 @@
       justify-content: space-between;
       height: 64px;
       box-shadow: 0 2px 8px rgba(0,0,0,.3);
+      position: -webkit-sticky;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -140,6 +141,7 @@
       flex: 1;
       display: grid;
       grid-template-columns: minmax(0, 1fr) 260px;
+      grid-gap: 20px;
       gap: 20px;
       padding: 20px;
       max-width: 1400px;
@@ -475,6 +477,7 @@
       justify-content: space-between;
       padding: 18px 20px 14px;
       border-bottom: 1px solid var(--border);
+      position: -webkit-sticky;
       position: sticky;
       top: 0;
       background: var(--card);
@@ -555,7 +558,7 @@
       background: var(--bg);
     }
     .form-input:focus { outline: none; border-color: var(--bday); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; }
     .submit-btn {
       width: 100%;
       padding: 10px;
@@ -640,7 +643,7 @@
     @media (max-width: 600px) {
       header { padding: 0 14px; }
       #weather-widget { display: none; }
-      main { padding: 12px; gap: 12px; }
+      main { padding: 12px; grid-gap: 12px; gap: 12px; }
       .cal-cell { min-height: 70px; }
     }
   </style>
