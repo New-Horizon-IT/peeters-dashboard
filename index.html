@@ -942,10 +942,6 @@ eventAllDay.addEventListener('change', () => {
   if (e.target === m) closeModal(m);
 }));
 
-fetchWeather();
-renderView();
-initSky();
-
 /* ──────────────────────────────────────────────
    NAVIGATION
 ────────────────────────────────────────────── */
@@ -1878,6 +1874,10 @@ function animateSky() {
   drawWorm(period, gy);
   requestAnimationFrame(animateSky);
 }
+
+fetchWeather();
+renderView();
+initSky();
 </script>
 </body>
 </html>
