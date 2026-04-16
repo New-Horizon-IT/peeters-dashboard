@@ -2061,24 +2061,28 @@ function clRender() {
 }
 
 function clTick(person, index) {
-  const data = clLoad();
-  if (data[person][index]) return; // already done — no un-ticking
-  data[person][index] = true;
+  const data    = clLoad();
+  const wasDown = data[person][index];
+  data[person][index] = !wasDown;
   clSave(data);
 
-  // Confetti burst
-  const row = document.querySelectorAll('#cl-body-' + person + ' .cl-item')[index];
-  if (row) {
-    var rect = row.getBoundingClientRect();
-    clConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  // Confetti only when ticking ON
+  if (!wasDown) {
+    const row = document.querySelectorAll('#cl-body-' + person + ' .cl-item')[index];
+    if (row) {
+      var rect = row.getBoundingClientRect();
+      clConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
   }
 
   clRender();
 
-  // Check all done
-  const ticked = data[person].filter(Boolean).length;
-  if (ticked === CL_ITEMS.length) {
-    setTimeout(function() { clCelebrate(person); }, 200);
+  // Celebrate only when all done (and we just ticked ON)
+  if (!wasDown) {
+    const ticked = data[person].filter(Boolean).length;
+    if (ticked === CL_ITEMS.length) {
+      setTimeout(function() { clCelebrate(person); }, 200);
+    }
   }
 }
 
