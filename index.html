@@ -140,15 +140,18 @@
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 260px;
+      grid-template-columns: 175px minmax(0, 1fr) 175px 260px;
       grid-gap: 20px;
       gap: 20px;
       padding: 20px;
-      max-width: 1400px;
+      max-width: 1500px;
       width: 100%;
       margin: 0 auto;
     }
-    .calendar-section { min-width: 0; }
+    .calendar-section { min-width: 0; grid-column: 2; }
+    .sidebar { grid-column: 4; }
+    #checklist-malachi { grid-column: 1; }
+    #checklist-atticus { grid-column: 3; }
 
     /* ═══════════════════════════════════════════════
        CALENDAR SECTION
@@ -634,17 +637,102 @@
       padding-right: 4px;
     }
 
+    /* ═══════════════════════════════════════════════
+       KIDS CHECKLISTS
+    ═══════════════════════════════════════════════ */
+    .checklist-panel {
+      background: rgba(255,255,255,.70) !important;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-self: start;
+    }
+    .checklist-header {
+      padding: 14px 14px 10px;
+      text-align: center;
+    }
+    .checklist-header .cl-emoji { font-size: 28px; display: block; margin-bottom: 4px; }
+    .checklist-header .cl-name  { font-size: 16px; font-weight: 700; color: #fff; }
+    .checklist-header .cl-prog  { font-size: 11px; color: rgba(255,255,255,.8); margin-top: 2px; }
+    .checklist-body { padding: 10px 12px 12px; display: flex; flex-direction: column; }
+    .cl-item {
+      display: flex;
+      align-items: center;
+      padding: 7px 4px;
+      border-bottom: 1px solid rgba(0,0,0,.06);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .cl-item:last-child { border-bottom: none; }
+    .cl-checkbox {
+      width: 20px; height: 20px; min-width: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+      margin-right: 9px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, border-color .2s;
+      font-size: 13px;
+    }
+    .cl-item.done .cl-checkbox {
+      background: #22c55e;
+      border-color: #22c55e;
+      color: #fff;
+    }
+    .cl-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+      transition: opacity .2s;
+      line-height: 1.3;
+    }
+    .cl-item.done .cl-label { opacity: .45; text-decoration: line-through; }
+    .cl-congrats {
+      display: none;
+      text-align: center;
+      padding: 12px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #16a34a;
+      background: rgba(34,197,94,.12);
+      border-radius: 8px;
+      margin: 8px 0 0;
+    }
+    .cl-congrats.show { display: block; }
+
     /* Responsive */
+    @media (max-width: 1150px) {
+      main {
+        grid-template-columns: minmax(0, 1fr) 260px;
+        grid-gap: 20px; gap: 20px;
+      }
+      .checklist-panel { grid-column: 1 / -1; }
+      .checklists-row {
+        display: -webkit-box; display: -ms-flexbox; display: flex;
+        -webkit-box-orient: horizontal; -webkit-box-direction: normal;
+        -ms-flex-direction: row; flex-direction: row;
+        gap: 16px; grid-gap: 16px;
+      }
+      .checklists-row .checklist-panel { flex: 1; }
+      .calendar-section { grid-column: 1; }
+      .sidebar { grid-column: 2; }
+    }
     @media (max-width: 900px) {
       main { grid-template-columns: 1fr; }
       .sidebar { order: -1; flex-direction: row; flex-wrap: wrap; }
       .sidebar-card { flex: 1; min-width: 240px; }
+      .checklists-row { gap: 12px; grid-gap: 12px; }
     }
     @media (max-width: 600px) {
       header { padding: 0 14px; }
       #weather-widget { display: none; }
       main { padding: 12px; grid-gap: 12px; gap: 12px; }
       .cal-cell { min-height: 70px; }
+      .checklists-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -669,6 +757,16 @@
      MAIN
 ═══════════════════════════════════════════════ -->
 <main>
+  <!-- MALACHI CHECKLIST -->
+  <div class="checklist-panel" id="checklist-malachi">
+    <div class="checklist-header" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+      <span class="cl-emoji">🦁</span>
+      <div class="cl-name">Malachi</div>
+      <div class="cl-prog" id="cl-prog-malachi">0 / 7</div>
+    </div>
+    <div class="checklist-body" id="cl-body-malachi"></div>
+  </div>
+
   <!-- LEFT: Calendar -->
   <div class="calendar-section">
 
@@ -705,6 +803,16 @@
       <div class="cal-body" id="cal-body"></div>
     </div>
 
+  </div>
+
+  <!-- ATTICUS CHECKLIST -->
+  <div class="checklist-panel" id="checklist-atticus">
+    <div class="checklist-header" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">
+      <span class="cl-emoji">🐯</span>
+      <div class="cl-name">Atticus</div>
+      <div class="cl-prog" id="cl-prog-atticus">0 / 7</div>
+    </div>
+    <div class="checklist-body" id="cl-body-atticus"></div>
   </div>
 
   <!-- RIGHT: Sidebar -->
@@ -1881,6 +1989,182 @@ function animateSky() {
 fetchWeather();
 renderView();
 initSky();
+
+/* ──────────────────────────────────────────────
+   KIDS DAILY CHECKLISTS
+────────────────────────────────────────────── */
+const CL_ITEMS = [
+  'Eaten Breakfast 🥣',
+  'Placed bowl/plate in dishwasher 🍽️',
+  'Cleaned the table 🧹',
+  'Brushed teeth 🪥',
+  'Gotten dressed 👕',
+  'Tidied up toys 🧸',
+  'Given mommy and daddy a kiss 💋',
+];
+const CL_PEOPLE = ['malachi', 'atticus'];
+const CL_KEY    = 'peeters-checklist-v1';
+
+function clTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+function clLoad() {
+  try {
+    const raw = localStorage.getItem(CL_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.date === clTodayStr()) return data;
+    }
+  } catch(e) {}
+  return { date: clTodayStr(), malachi: [false,false,false,false,false,false,false], atticus: [false,false,false,false,false,false,false] };
+}
+
+function clSave(data) {
+  try { localStorage.setItem(CL_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function clRender() {
+  const data = clLoad();
+  CL_PEOPLE.forEach(function(person) {
+    const body   = document.getElementById('cl-body-' + person);
+    const prog   = document.getElementById('cl-prog-' + person);
+    if (!body) return;
+    const ticked = data[person].filter(Boolean).length;
+    prog.textContent = ticked + ' / ' + CL_ITEMS.length;
+    body.innerHTML = '';
+    CL_ITEMS.forEach(function(label, i) {
+      const done = data[person][i];
+      const row  = document.createElement('div');
+      row.className = 'cl-item' + (done ? ' done' : '');
+      row.innerHTML =
+        '<div class="cl-checkbox">' + (done ? '✓' : '') + '</div>' +
+        '<div class="cl-label">' + label + '</div>';
+      row.addEventListener('click', function() { clTick(person, i); });
+      body.appendChild(row);
+    });
+    // Congrats
+    let congrats = body.querySelector('.cl-congrats');
+    if (!congrats) {
+      congrats = document.createElement('div');
+      congrats.className = 'cl-congrats';
+      congrats.textContent = '🎉 Amazing job today!';
+      body.appendChild(congrats);
+    }
+    if (ticked === CL_ITEMS.length) {
+      congrats.classList.add('show');
+    } else {
+      congrats.classList.remove('show');
+    }
+  });
+}
+
+function clTick(person, index) {
+  const data = clLoad();
+  if (data[person][index]) return; // already done — no un-ticking
+  data[person][index] = true;
+  clSave(data);
+
+  // Confetti burst
+  const row = document.querySelectorAll('#cl-body-' + person + ' .cl-item')[index];
+  if (row) {
+    var rect = row.getBoundingClientRect();
+    clConfetti(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }
+
+  clRender();
+
+  // Check all done
+  const ticked = data[person].filter(Boolean).length;
+  if (ticked === CL_ITEMS.length) {
+    setTimeout(function() { clCelebrate(person); }, 200);
+  }
+}
+
+function clConfetti(cx, cy) {
+  var colors = ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#f06595'];
+  for (var i = 0; i < 22; i++) {
+    (function(i) {
+      var dot = document.createElement('div');
+      var size = 5 + Math.random() * 6;
+      var angle = (i / 22) * Math.PI * 2 + Math.random() * 0.4;
+      var dist  = 35 + Math.random() * 65;
+      var tx    = Math.cos(angle) * dist;
+      var ty    = Math.sin(angle) * dist - 20;
+      dot.style.cssText =
+        'position:fixed;width:' + size + 'px;height:' + size + 'px;' +
+        'background:' + colors[i % colors.length] + ';' +
+        'border-radius:' + (Math.random() > 0.5 ? '50%' : '3px') + ';' +
+        'left:' + cx + 'px;top:' + cy + 'px;pointer-events:none;z-index:9999;' +
+        'transition:transform 0.7s ease-out,opacity 0.7s ease-out;' +
+        'transform:translate(-50%,-50%);opacity:1;';
+      document.body.appendChild(dot);
+      setTimeout(function() {
+        dot.style.transform = 'translate(calc(-50% + ' + tx + 'px), calc(-50% + ' + ty + 'px)) rotate(180deg)';
+        dot.style.opacity = '0';
+      }, 20);
+      setTimeout(function() { if (dot.parentNode) dot.parentNode.removeChild(dot); }, 900);
+    })(i);
+  }
+}
+
+function clCelebrate(person) {
+  // Big confetti burst from centre of panel
+  var panel = document.getElementById('checklist-' + person);
+  if (panel) {
+    var rect = panel.getBoundingClientRect();
+    var cx   = rect.left + rect.width  / 2;
+    var cy   = rect.top  + rect.height / 2;
+    for (var b = 0; b < 3; b++) {
+      (function(b) { setTimeout(function() { clConfetti(cx, cy); }, b * 250); })(b);
+    }
+  }
+  clPlayTrumpet();
+}
+
+function clPlayTrumpet() {
+  try {
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    var ctx = new AudioCtx();
+    // C major fanfare: C5 E5 G5 C6 — G5 C6
+    var notes = [
+      [523.25, 0.00, 0.18],
+      [659.25, 0.18, 0.18],
+      [783.99, 0.36, 0.18],
+      [1046.5, 0.54, 0.40],
+      [783.99, 0.94, 0.14],
+      [1046.5, 1.08, 0.60],
+    ];
+    notes.forEach(function(n) {
+      var freq = n[0], start = n[1], dur = n[2];
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + dur + 0.05);
+    });
+  } catch(e) {}
+}
+
+// Reset checklists after 06:00 each day
+function clCheckReset() {
+  var data = clLoad();
+  if (data.date !== clTodayStr()) {
+    clSave({ date: clTodayStr(), malachi: [false,false,false,false,false,false,false], atticus: [false,false,false,false,false,false,false] });
+    clRender();
+  }
+}
+// Check every minute — picks up the 06:00 reset naturally
+setInterval(clCheckReset, 60000);
+clRender();
 </script>
 </body>
 </html>
